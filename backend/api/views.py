@@ -1,6 +1,8 @@
-from djoser.serializers import UserSerializer
+from django.db.models import Sum
+from django.http import HttpResponse
 from djoser.views import UserViewSet
-from recipes.models import Ingredient, Recipe, Tag
+from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
+                            ShoppingCart, Tag)
 from rest_framework import status, viewsets
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
@@ -10,25 +12,30 @@ from rest_framework.permissions import (IsAuthenticated,
 from rest_framework.response import Response
 from users.models import Follow, User
 
+from api.filters import TagFilter
+
+from .permissions import IsOwnerOrReadOnly
 from .serializers import (FollowSerializer, IngredientSerializer,
-                          RecipeSerializer, SubscriberSerializer,
-                          TagSerializer)
+                          RecipeSerializer, ShoppingCartSerializer,
+                          TagSerializer, UserSerializer)
 
 
 class UserViewSet(UserViewSet):
+
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    authentication_classes = (TokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
-    @action(detail=True, permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['POST'],
+            permission_classes=[IsAuthenticated])
     def subscribe(self, request, id=None):
         user = request.user
         author = get_object_or_404(User, id=id)
 
         if user == author:
             return Response({
-                'errors': 'Вы не можете подписываться на самого себя'
+                'errors': 'Вы не можете подписаться на самого себя'
             }, status=status.HTTP_400_BAD_REQUEST)
         if Follow.objects.filter(user=user, author=author).exists():
             return Response({
@@ -47,7 +54,7 @@ class UserViewSet(UserViewSet):
         author = get_object_or_404(User, id=id)
         if user == author:
             return Response({
-                'errors': 'Вы не можете отписываться от самого себя'
+                'errors': 'Вы не можете отписаться от самого себя'
             }, status=status.HTTP_400_BAD_REQUEST)
         follow = Follow.objects.filter(user=user, author=author)
         if follow.exists():
@@ -75,7 +82,12 @@ class TagViewSet(viewsets.ModelViewSet):
 
     model = Tag
     serializer_class = TagSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
     queryset = Tag.objects.all()
+
+    class Meta:
+        model = Ingredient
+        fields = ('id', 'name', 'color', 'slug')
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
@@ -93,18 +105,72 @@ class IngredientViewSet(viewsets.ModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
 
     model = Recipe
+    queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
-    queryset = Recipe.objects.prefetch_related(
-        'ingredients__ingredient'
-    ).all().order_by('-pub_date')
-    filterset_fields = ['author', ]
+    permission_classes = [IsOwnerOrReadOnly]
+    filter_class = TagFilter
 
+    @action(detail=True, methods=['POST', 'DELETE'],
+            permission_classes=[IsAuthenticated])
+    def favorite(self, request, pk=None):
+        if request.method == 'POST':
+            return self.add_object(Favorite, request.user, pk)
+        elif request.method == 'DELETE':
+            return self.delete_object(Favorite, request.user, pk)
+        return None
 
-class SubscriptionsViewSet(UserViewSet):
+    @action(detail=True, methods=['POST', 'DELETE'],
+            permission_classes=[IsAuthenticated])
+    def shopping_cart(self, request, pk=None):
+        if request.method == 'POST':
+            return self.add_object(ShoppingCart, request.user, pk)
+        elif request.method == 'DELETE':
+            return self.delete_object(ShoppingCart, request.user, pk)
+        return None
 
-    serializer_class = SubscriberSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]    
+    def add_object(self, model, user, pk):
+        if model.objects.filter(user=user, recipe__id=pk).exists():
+            return Response({
+                'errors': 'Рецепт уже добавлен в список покупок'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        recipe = get_object_or_404(Recipe, id=pk)
+        model.objects.create(user=user, recipe=recipe)
+        serializer = ShoppingCartSerializer(recipe)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def get_queryset(self, *args, **kwargs):
-        return User.objects.filter(subscribed__user=self.request.user)
+    def delete_object(self, model, user, pk):
+        obj = model.objects.filter(user=user, recipe__id=pk)
+        if obj.exists():
+            obj.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({
+            'errors': 'Рецепт уже удален'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['GET'],
+            permission_classes=[IsAuthenticated],
+            url_path='download_shopping_cart',
+            url_name='download_shopping_cart')
+    def set_download_shopping_cart(self, request):
+        recipes_in_shopping_cart = ShoppingCart.objects.filter(
+            user=request.user
+        ).values_list('recipe__id')
+        user = request.user
+        ingredients = (
+            IngredientInRecipe.objects.select_related('ingredient')
+            .filter(recipe__id__in=recipes_in_shopping_cart)
+            .values('ingredient__name', 'ingredient__measurement_unit')
+            .annotate(total=Sum('amount'))
+        )
+        filename = '{}_list.txt'.format(user.username)
+        products = []
+        for ingredient in ingredients:
+            products.append(
+                '{} ({}) - {}'.format(
+                    ingredient["ingredient__name"],
+                    ingredient["ingredient__measurement_unit"],
+                    ingredient["total"]))
+        content = 'Продукт (единицы) - количество \n \n' + '\n'.join(products)
+        response = HttpResponse(content, content_type='text/plain')
+        response['Content-Disposition'] = f'attachment; filename={filename}'
+        return response
