@@ -7,17 +7,20 @@ from rest_framework import status, viewsets
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
-from rest_framework.permissions import (IsAuthenticated,
+from rest_framework.permissions import (SAFE_METHODS, IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
+from rest_framework.status import (HTTP_200_OK, HTTP_201_CREATED,
+                                   HTTP_204_NO_CONTENT, HTTP_400_BAD_REQUEST)
 from users.models import Follow, User
 
 from api.filters import TagFilter
 
 from .permissions import IsOwnerOrReadOnly
 from .serializers import (FollowSerializer, IngredientSerializer,
-                          RecipeSerializer, ShoppingCartSerializer,
-                          TagSerializer, UserSerializer)
+                          RecipeListSerializer, RecipeSerializer,
+                          ShoppingCartSerializer, TagSerializer,
+                          UserSerializer)
 
 
 class UserViewSet(UserViewSet):
@@ -106,9 +109,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     model = Recipe
     queryset = Recipe.objects.all()
-    serializer_class = RecipeSerializer
     permission_classes = [IsOwnerOrReadOnly]
     filter_class = TagFilter
+
+    def get_serializer_class(self):
+        if self.action in ('list', 'retrieve'):
+            return RecipeListSerializer
+        return RecipeSerializer
 
     @action(detail=True, methods=['POST', 'DELETE'],
             permission_classes=[IsAuthenticated])

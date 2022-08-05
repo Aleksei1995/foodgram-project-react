@@ -7,19 +7,13 @@ from users.managers import UserManager
 class User(AbstractBaseUser, PermissionsMixin):
 
     username = models.CharField('Логин', max_length=150,
-                                unique=True,
-                                blank=False,
-                                null=False,
-                                )
+                                unique=True)
     email = models.EmailField('Адрес электронной почты',
                               max_length=254,
-                              unique=True,
-                              blank=False,
-                              null=False
-                              )
-    first_name = models.CharField('Имя', max_length=150, blank=False)
-    last_name = models.CharField('Фамилия', max_length=150, blank=False)
-    password = models.CharField('Пароль', max_length=150, blank=False)
+                              unique=True)
+    first_name = models.CharField('Имя', max_length=150)
+    last_name = models.CharField('Фамилия', max_length=150)
+    password = models.CharField('Пароль', max_length=150)
 
     is_staff = models.BooleanField(default=False)
 

@@ -5,11 +5,9 @@ from users.models import User
 
 class Tag(models.Model):
 
-    name = models.CharField('Название', max_length=200, unique=True,
-                            blank=False)
-    color = models.CharField('Цветовой HEX-код', max_length=200, unique=True,
-                             blank=False)
-    slug = models.SlugField('Slug', unique=True, blank=False)
+    name = models.CharField('Название', max_length=200, unique=True)
+    color = models.CharField('Цветовой HEX-код', max_length=200, unique=True)
+    slug = models.SlugField('Slug', unique=True)
 
     class Meta:
         ordering = ['slug']
@@ -24,8 +22,7 @@ class Ingredient(models.Model):
 
     name = models.CharField(
         'Название',
-        null=False,
-        max_length=200
+        max_length=200,
     )
     measurement_unit = models.CharField(
         'Единицы измерения',
@@ -87,12 +84,12 @@ class IngredientInRecipe(models.Model):
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        verbose_name='Рецепт',
+        verbose_name='Рецепт'        
     )
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
-        verbose_name='Ингредиент',
+        verbose_name='Ингредиент'
     )
     amount = models.IntegerField(
         'Количество',
