@@ -141,6 +141,13 @@ class RecipeSerializer(serializers.ModelSerializer):
             tags_list.append(tag)
         return data
 
+    def create_ingredients(self, ingredients, recipe):
+        for ingredient in ingredients:
+            IngredientInRecipe.objects.create(
+                recipe=recipe,
+                **ingredient
+            )
+
     def create(self, validated_data):
         ingredient_data = validated_data.pop('ingredientinrecipe_set')
         tags = validated_data.pop('tags')
@@ -159,13 +166,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         self.create_ingredients(validated_data.pop(
                                 'ingredientinrecipe_set'), instance)
         return super().update(instance, validated_data)
-
-    def create_ingredients(self, ingredients, recipe):
-        for ingredient in ingredients:
-            IngredientInRecipe.objects.create(
-                recipe=recipe,
-                **ingredient
-            )
 
     def to_representation(self, instance):
         request = self.context.get('request')
