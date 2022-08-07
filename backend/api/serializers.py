@@ -1,8 +1,9 @@
 from djoser.serializers import UserSerializer
 from drf_extra_fields.fields import Base64ImageField
-from recipes.models import Ingredient, IngredientInRecipe, Recipe, Tag
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
+
+from recipes.models import Ingredient, IngredientInRecipe, Recipe, Tag
 from users.models import Follow, User
 
 
@@ -53,7 +54,8 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
 class RecipeListSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, read_only=True)
     author = UserSerializer(read_only=True)
-    ingredients = serializers.SerializerMethodField(read_only=True)
+    ingredients = IngredientInRecipeSerializer(
+        many=True, source='ingredientinrecipe_set')
     is_favorited = serializers.SerializerMethodField(read_only=True)
     is_in_shopping_cart = serializers.SerializerMethodField(read_only=True)
 
@@ -63,10 +65,6 @@ class RecipeListSerializer(serializers.ModelSerializer):
             'id', 'tags', 'author', 'ingredients', 'is_favorited',
             'is_in_shopping_cart', 'name', 'image', 'text', 'cooking_time'
         )
-
-    def get_ingredients(self, obj):
-        ingredients = IngredientInRecipe.objects.filter(recipe=obj)
-        return IngredientInRecipeSerializer(ingredients, many=True).data
 
     def get_is_favorited(self, obj):
         user = self.context.get('request').user
@@ -142,11 +140,14 @@ class RecipeSerializer(serializers.ModelSerializer):
         return data
 
     def create_ingredients(self, ingredients, recipe):
-        for ingredient in ingredients:
-            IngredientInRecipe.objects.create(
+        new_ingredients = [
+            IngredientInRecipe(
                 recipe=recipe,
                 **ingredient
             )
+            for ingredient in ingredients
+        ]
+        IngredientInRecipe.objects.bulk_create(new_ingredients)
 
     def create(self, validated_data):
         ingredient_data = validated_data.pop('ingredientinrecipe_set')
@@ -156,8 +157,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             **validated_data
         )
         new_recipe.tags.set(tags)
-        new_ingredients = self.create_ingredients(ingredient_data, new_recipe)
-        IngredientInRecipe.objects.bulk_create(new_ingredients)
+        self.create_ingredients(ingredient_data, new_recipe)
         return new_recipe
 
     def update(self, instance, validated_data):

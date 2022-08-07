@@ -1,5 +1,6 @@
 from django.core.validators import MinValueValidator
 from django.db import models
+
 from users.models import User
 
 
@@ -103,6 +104,12 @@ class IngredientInRecipe(models.Model):
         ), ]
         verbose_name = 'Ингредиент в рецепте'
         verbose_name_plural = 'Ингредиенты в рецепте'
+
+    def __str__(self):
+        return (
+            f'{self.ingredient.name} - {self.amount}'
+            f' ({self.ingredient.measurement_unit})'
+        )
 
 
 class Favorite(models.Model):
