@@ -1,18 +1,39 @@
 import django_filters as filters
 
-from recipes.models import Recipe
+from recipes.models import Recipe, Tag
 
 
-class TagFilter(filters.FilterSet):
+class RecipeFilter(filters.FilterSet):
 
-    tags = filters.AllValuesMultipleFilter(field_name='tags__slug')
-    is_favorited = filters.BooleanFilter(method='filter_is_favorited')
+    author = filters.NumberFilter(
+        field_name='author__id',
+        lookup_expr='exact'
+    )
+    tags = filters.ModelMultipleChoiceFilter(
+        field_name='tags__slug',
+        to_field_name='slug',
+        queryset=Tag.objects.all()
+    )
+    is_favorited = filters.BooleanFilter(
+        method='get_is_in'
+    )
+    is_in_shopping_cart = filters.BooleanFilter(
+        method='get_is_in'
+    )
 
-    def filter_is_favorited(self, queryset, name, value):
-        if value and not self.request.user.is_anonymous:
-            return queryset.filter(favorites__user=self.request.user)
+    def get_is_in(self, queryset, name, value):
+        """
+        Фильтрация рецептов по избранному и списку покупок.
+        """
+        user = self.request.user
+        if user.is_authenticated:
+            if value == '1':
+                if name == 'is_favorited':
+                    queryset = queryset.filter(favorites=user)
+                if name == 'is_in_shopping_cart':
+                    queryset = queryset.filter(shoppings=user)
         return queryset
 
     class Meta:
         model = Recipe
-        fields = ('tags', 'author')
+        fields = ('author', 'tags', 'is_favorited', 'is_in_shopping_cart')

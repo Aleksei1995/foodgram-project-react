@@ -12,7 +12,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', default='pu326)4b@$4=(jtg4s@stm%u2wz-cua6b)
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', default='*').split(' ')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -21,7 +21,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django_filters',
     'rest_framework',
     'rest_framework.authtoken',
     'djoser',

@@ -8,12 +8,12 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import (IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
+from django_filters.rest_framework.backends import DjangoFilterBackend
 
-from api.filters import TagFilter
+from api.filters import RecipeFilter
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag)
 from users.models import Follow, User
-
 from .permissions import IsOwnerOrReadOnly
 from .serializers import (FollowSerializer, IngredientSerializer,
                           RecipeListSerializer, RecipeSerializer,
@@ -84,6 +84,7 @@ class TagViewSet(viewsets.ModelViewSet):
     model = Tag
     serializer_class = TagSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+    pagination_class = None
     queryset = Tag.objects.all()
 
     class Meta:
@@ -96,6 +97,7 @@ class IngredientViewSet(viewsets.ModelViewSet):
     model = Ingredient
     serializer_class = IngredientSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+    pagination_class = None
     queryset = Ingredient.objects.all()
 
     class Meta:
@@ -106,9 +108,21 @@ class IngredientViewSet(viewsets.ModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
 
     model = Recipe
-    queryset = Recipe.objects.all()
     permission_classes = [IsOwnerOrReadOnly]
-    filter_class = TagFilter
+    filterset_class = RecipeFilter
+    filter_backends = (DjangoFilterBackend,)
+
+    def get_queryset(self):
+
+        queryset = Recipe.objects.all()
+        is_favorited = self.request.query_params.get('is_favorited')
+        is_in_shopping_cart = self.request.query_params.get(
+            'is_in_shopping_cart')
+        if is_favorited:
+            queryset = queryset.filter(favorites__user=self.request.user)
+        if is_in_shopping_cart:
+            queryset = queryset.filter(shopping_cart__user=self.request.user)
+        return queryset
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
