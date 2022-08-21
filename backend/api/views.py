@@ -10,7 +10,7 @@ from rest_framework.permissions import (IsAuthenticated,
 from rest_framework.response import Response
 from django_filters.rest_framework.backends import DjangoFilterBackend
 
-from api.filters import RecipeFilter
+from api.filters import RecipeFilter, IngredientSearchFilter
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag)
 from users.models import Follow, User
@@ -99,6 +99,8 @@ class IngredientViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
     pagination_class = None
     queryset = Ingredient.objects.all()
+    filter_backends = [IngredientSearchFilter]
+    search_fields = ('^name',)
 
     class Meta:
         model = Ingredient
