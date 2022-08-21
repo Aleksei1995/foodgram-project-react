@@ -1,6 +1,6 @@
 import django_filters as filters
 
-from recipes.models import Recipe, Tag
+from recipes.models import Tag
 
 
 class RecipeFilter(filters.FilterSet):
@@ -15,29 +15,13 @@ class RecipeFilter(filters.FilterSet):
         queryset=Tag.objects.all()
     )
     is_favorited = filters.BooleanFilter(
-        method='get_is_in'
+        field_name='is_favorited'
     )
     is_in_shopping_cart = filters.BooleanFilter(
-        method='get_is_in'
+        field_name='is_in_shopping_cart'
     )
-
-    def get_is_in(self, queryset, name, value):
-        """
-        Фильтрация рецептов по избранному и списку покупок.
-        """
-        user = self.request.user
-        if user.is_authenticated:
-            if value == '1':
-                if name == 'is_favorited':
-                    queryset = queryset.filter(favorites=user)
-                if name == 'is_in_shopping_cart':
-                    queryset = queryset.filter(shoppings=user)
-        return queryset
-
-    class Meta:
-        model = Recipe
-        fields = ('author', 'tags', 'is_favorited', 'is_in_shopping_cart')
 
 
 class IngredientSearchFilter(filters.SearchFilter):
+
     search_param = 'name'
