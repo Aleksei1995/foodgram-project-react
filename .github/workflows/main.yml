@@ -1,4 +1,4 @@
-name: foodgram_main
+name: main
 
 on: [push]
 
