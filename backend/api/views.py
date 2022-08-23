@@ -103,6 +103,7 @@ class IngredientViewSet(viewsets.ModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
 
     model = Recipe
+    queryset = Recipe.objects.all()
     permission_classes = [IsOwnerOrReadOnly]
     filterset_class = RecipeFilter
     filter_backends = (DjangoFilterBackend,)
