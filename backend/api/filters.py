@@ -17,15 +17,26 @@ class RecipeFilter(filters.FilterSet):
     )
     is_favorited = filters.BooleanFilter(
         field_name='is_favorited',
-        method='filter')
+    )
     is_in_shopping_cart = filters.BooleanFilter(
         field_name='is_in_shopping_cart',
-        method='filter')
+    )
 
-    def filter(self, queryset, name, value):
-        if name == 'is_favorited':
+    # def filter(self, queryset, name, value):
+    #    if name == 'is_favorited' and value:
+    #        queryset = queryset.filter(favorites__user=self.request.user)
+    #    if name == 'is_in_shopping_cart' and value:
+    #        queryset = queryset.filter(shopping_cart__user=self.request.user)
+    #    return queryset
+
+    def get_queryset(self):
+        queryset = Recipe.objects.all()
+        is_favorited = self.request.query_params.get('is_favorited')
+        is_in_shopping_cart = self.request.query_params.get(
+            'is_in_shopping_cart')
+        if is_favorited:
             queryset = queryset.filter(favorites__user=self.request.user)
-        if name == 'is_in_shopping_cart':
+        if is_in_shopping_cart:
             queryset = queryset.filter(shopping_cart__user=self.request.user)
         return queryset
 
