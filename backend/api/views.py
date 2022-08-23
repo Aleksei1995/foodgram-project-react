@@ -15,6 +15,7 @@ from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag)
 from users.models import Follow, User
 from .permissions import IsOwnerOrReadOnly
+from .pagination import PageNumberPagination
 from .serializers import (FollowSerializer, IngredientSerializer,
                           RecipeListSerializer, RecipeSerializer,
                           ShoppingCartSerializer, TagSerializer,
@@ -87,10 +88,6 @@ class TagViewSet(viewsets.ModelViewSet):
     pagination_class = None
     queryset = Tag.objects.all()
 
-    class Meta:
-        model = Ingredient
-        fields = ('id', 'name', 'color', 'slug')
-
 
 class IngredientViewSet(viewsets.ModelViewSet):
 
@@ -102,10 +99,6 @@ class IngredientViewSet(viewsets.ModelViewSet):
     filter_backends = [IngredientSearchFilter]
     search_fields = ('^name',)
 
-    class Meta:
-        model = Ingredient
-        fields = ('id', 'name', 'measurement_unit')
-
 
 class RecipeViewSet(viewsets.ModelViewSet):
 
@@ -113,18 +106,18 @@ class RecipeViewSet(viewsets.ModelViewSet):
     permission_classes = [IsOwnerOrReadOnly]
     filterset_class = RecipeFilter
     filter_backends = (DjangoFilterBackend,)
+    pagination_class = PageNumberPagination
 
-    def get_queryset(self):
-
-        queryset = Recipe.objects.all()
-        is_favorited = self.request.query_params.get('is_favorited')
-        is_in_shopping_cart = self.request.query_params.get(
-            'is_in_shopping_cart')
-        if is_favorited:
-            queryset = queryset.filter(favorites__user=self.request.user)
-        if is_in_shopping_cart:
-            queryset = queryset.filter(shopping_cart__user=self.request.user)
-        return queryset
+    # def get_queryset(self):
+    #    queryset = Recipe.objects.all()
+    #    is_favorited = self.request.query_params.get('is_favorited')
+    #    is_in_shopping_cart = self.request.query_params.get(
+    #        'is_in_shopping_cart')
+    #    if is_favorited:
+    #        queryset = queryset.filter(favorites__user=self.request.user)
+    #    if is_in_shopping_cart:
+    #        queryset = queryset.filter(shopping_cart__user=self.request.user)
+    #    return queryset
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
