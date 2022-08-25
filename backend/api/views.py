@@ -109,17 +109,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     pagination_class = PageNumberPagination
 
-    # def get_queryset(self):
-    #    queryset = Recipe.objects.all()
-    #    is_favorited = self.request.query_params.get('is_favorited')
-    #    is_in_shopping_cart = self.request.query_params.get(
-    #        'is_in_shopping_cart')
-    #    if is_favorited:
-    #        queryset = queryset.filter(favorites__user=self.request.user)
-    #    if is_in_shopping_cart:
-    #        queryset = queryset.filter(shopping_cart__user=self.request.user)
-    #    return queryset
-
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
             return RecipeListSerializer
