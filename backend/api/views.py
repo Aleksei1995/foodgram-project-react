@@ -107,8 +107,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     permission_classes = [IsOwnerOrReadOnly]
     filterset_class = RecipeFilter
     filter_backends = (DjangoFilterBackend,)
-    pagination_class = PageNumberPagination
-    filterset_fields = ['is_favorited', 'is_in_shopping_cart']
+    pagination_class = PageNumberPagination    
 
     # def get_queryset(self):
     #    queryset = Recipe.objects.all()
