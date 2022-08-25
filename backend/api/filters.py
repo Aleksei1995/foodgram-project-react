@@ -42,11 +42,11 @@ class IngredientSearchFilter(SearchFilter):
 class IsOwnerFilterBackend(filters.BaseFilterBackend):
 
     def filter_queryset(self, request, queryset, view):
-        is_favorited = self.request.query_params.get('is_favorited')
-        is_in_shopping_cart = self.request.query_params.get(
+        is_favorited = request.query_params.get('is_favorited')
+        is_in_shopping_cart = request.query_params.get(
             'is_in_shopping_cart')
         if is_favorited:
-            queryset = queryset.filter(favorites__user=self.request.user)
+            queryset = queryset.filter(favorites__user=request.user)
         if is_in_shopping_cart:
-            queryset = queryset.filter(shopping_cart__user=self.request.user)
+            queryset = queryset.filter(shopping_cart__user=request.user)
         return queryset
