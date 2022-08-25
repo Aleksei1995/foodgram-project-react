@@ -10,7 +10,7 @@ from rest_framework.permissions import (IsAuthenticated,
 from rest_framework.response import Response
 from django_filters.rest_framework.backends import DjangoFilterBackend
 
-from .filters import RecipeFilter, IngredientSearchFilter, IsOwnerFilterBackend
+from .filters import RecipeFilter, IngredientSearchFilter
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag)
 from users.models import Follow, User
@@ -103,11 +103,12 @@ class IngredientViewSet(viewsets.ModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
 
     model = Recipe
-    # queryset = Recipe.objects.all()
+    queryset = Recipe.objects.all()
     permission_classes = [IsOwnerOrReadOnly]
-    filterset_class = RecipeFilter, IsOwnerFilterBackend
+    filterset_class = RecipeFilter
     filter_backends = (DjangoFilterBackend,)
     pagination_class = PageNumberPagination
+    filterset_fields = ['is_favorited', 'is_in_shopping_cart']
 
     # def get_queryset(self):
     #    queryset = Recipe.objects.all()
