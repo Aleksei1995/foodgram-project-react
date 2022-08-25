@@ -30,7 +30,6 @@ class RecipeFilter(filters.FilterSet):
     #    return queryset
 
     def filter_queryset(self, queryset, view):
-        queryset = Recipe.objects.all()
         is_favorited = self.request.query_params.get('is_favorited')
         is_in_shopping_cart = self.request.query_params.get(
             'is_in_shopping_cart')
